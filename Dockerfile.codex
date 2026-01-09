@@ -1,0 +1,73 @@
+FROM node:20-bookworm AS tmux-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        bison \
+        flex \
+        libevent-dev \
+        libncurses-dev \
+        pkg-config \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+ARG TMUX_VERSION=3.6
+RUN curl -fsSL "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" -o /tmp/tmux.tar.gz \
+    && tar -xzf /tmp/tmux.tar.gz -C /tmp \
+    && cd /tmp/tmux-${TMUX_VERSION} \
+    && ./configure \
+    && make -j"$(nproc)" \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/tmux.tar.gz /tmp/tmux-${TMUX_VERSION}
+
+FROM node:20-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        ca-certificates \
+        curl \
+        python3 \
+        python3-pip \
+        python3-venv \
+        libevent-2.1-7 \
+        libncursesw6 \
+        libtinfo6 \
+        ripgrep \
+        zip \
+        unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=tmux-builder /usr/local/bin/tmux /usr/local/bin/tmux
+COPY --from=tmux-builder /usr/local/share/man/man1/tmux.1 /usr/local/share/man/man1/tmux.1
+
+RUN npm install -g @openai/codex
+
+ENV PATH="/node/.cargo/bin:${PATH}"
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Ensure the venv binaries are on PATH for all processes.
+ENV VENV_PATH="/opt/codex-venv"
+ENV PATH="${VENV_PATH}/bin:${PATH}"
+
+COPY record-tmux /opt/record-tmux
+RUN chmod +x /opt/record-tmux/record-tmux.sh
+ENV PATH="/opt/record-tmux:${PATH}"
+
+COPY --chown=node:node docker-assets/tmux.conf /home/node/.tmux.conf
+COPY --chown=node:node docker-assets/codex /home/node/.codex
+
+RUN python3 -m venv /opt/codex-venv \
+    && /opt/codex-venv/bin/pip install --upgrade pip \
+    && chown -R node:node /opt/codex-venv
+
+WORKDIR /workspace/repo
+
+CMD ["tail", "-f", "/dev/null"]

@@ -1,0 +1,4 @@
+.git
+tmux-recordings/
+record-tmux/tmp-tmux/
+*.sock
