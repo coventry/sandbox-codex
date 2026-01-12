@@ -143,6 +143,8 @@ ensure_session() {
 
       bash "$RECORD_SCRIPT" -s "$SESSION" -o "$OUTPUT_DIR" --no-attach
 
+      export PATH="/opt/codex-env/bin:${PATH}"
+
       tmux rename-window -t "${SESSION}:0" codex
       tmux select-pane -t "${SESSION}:0.0" -T codex
       tmux send-keys -t "${SESSION}:0.0" "cd \"$CODEX_WORKDIR\" && codex --dangerously-bypass-approvals-and-sandbox" C-m
