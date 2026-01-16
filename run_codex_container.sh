@@ -125,6 +125,7 @@ ensure_session() {
     -e CODEX_TMUX_SESSION="$SESSION_NAME" \
     -e CODEX_RECORD_OUTPUT_DIR="$RECORD_OUTPUT_DIR_IN_CONTAINER" \
     -e CODEX_RECORD_TMUX_SCRIPT="$RECORD_TMUX_SCRIPT_IN_CONTAINER" \
+    -e CODEX_RECORD_SNAPSHOT_INTERVAL \
     -e HOME="$CONTAINER_HOME" \
     --user "$CONTAINER_USER" \
     "$CONTAINER_NAME" \
@@ -133,6 +134,9 @@ ensure_session() {
       SESSION="${CODEX_TMUX_SESSION:-codex}"
       RECORD_SCRIPT="${CODEX_RECORD_TMUX_SCRIPT:-/opt/record-tmux/record-tmux.sh}"
       OUTPUT_DIR="${CODEX_RECORD_OUTPUT_DIR:-/workspace/repo/tmux-recordings}"
+      if [[ -n "${CODEX_RECORD_SNAPSHOT_INTERVAL:-}" ]]; then
+        export RECORD_TMUX_SNAPSHOT_INTERVAL="$CODEX_RECORD_SNAPSHOT_INTERVAL"
+      fi
 
       if [[ ! -x "$RECORD_SCRIPT" ]]; then
         echo "record-tmux script not found at $RECORD_SCRIPT" >&2

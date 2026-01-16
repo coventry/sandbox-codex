@@ -1,0 +1,34 @@
+* Installing into a running container with apt
+
+_ I want to install something in a running container. Is there a way to do that? ubuntu@ubuntu-virtualbox:~$ docker ps -a | grep codex-local
+  2741813f8dec   codex-local:latest      "docker-entrypoint.s_"   17 hours ago   Up 17 hours             codex-tmux-reasoning-assess-sft
+  ubuntu@ubuntu-virtualbox:~$ docker exec --user root -it 274 bash
+  root@ubuntu-virtualbox:/workspace/repo# apt update
+  E: setgroups 65534 failed - setgroups (1: Operation not permitted)
+  ...
+
+  your container is running with user_namespace restrictions, so apt can_t drop privileges to the _apt user (the setgroups errors). Run apt with the sandbox disabled for that
+  session:
+
+  docker exec --user root -it 2741813f8dec bash
+  apt-get -o APT::Sandbox::User=root update
+  apt-get -o APT::Sandbox::User=root install -y <pkg>
+
+  If you want this to persist, bake it into the image (preferred) or commit the container to a new image (less reproducible).
+
+  Try this inside the container:
+
+  mkdir -p /tmp/apt-cache/partial /tmp/apt-lists/partial
+  apt-get -o APT::Sandbox::User=root \
+    -o Dir::Cache::Archives=/tmp/apt-cache \
+    -o Dir::Cache::Archives::partial=/tmp/apt-cache/partial \
+    -o Dir::State::lists=/tmp/apt-lists \
+    -o Dir::State::lists::partial=/tmp/apt-lists/partial \
+    update
+
+  apt-get -o APT::Sandbox::User=root \
+    -o Dir::Cache::Archives=/tmp/apt-cache \
+    -o Dir::Cache::Archives::partial=/tmp/apt-cache/partial \
+    -o Dir::State::lists=/tmp/apt-lists \
+    -o Dir::State::lists::partial=/tmp/apt-lists/partial \
+    install -y emacs

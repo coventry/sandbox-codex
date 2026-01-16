@@ -25,7 +25,7 @@ log_debug() {
 usage() {
   # Display CLI help text.
   cat <<'USAGE'
-Usage: record-tmux.sh [-s session_name] [-o output_dir] [--no-attach]
+Usage: record-tmux.sh [-s session_name] [-o output_dir] [--no-attach] [--snapshot-interval seconds]
 
 Starts a tmux session and records all pane output to per-pane log files.
 Logs are timestamped and named after the pane title when available.
@@ -33,6 +33,8 @@ Logs are timestamped and named after the pane title when available.
 Options:
   -s, --session NAME   Name for the tmux session to start (default: record)
   -o, --output-dir DIR Directory to place recordings (default: ./tmux-recordings)
+      --snapshot-interval SECONDS
+                        Capture plain-text pane snapshots every N seconds (default: 0/off)
       --no-attach      Do not attach after preparing the session
   -h, --help           Show this help
 USAGE
@@ -46,6 +48,81 @@ sanitize_label() {
   cleaned=${cleaned#_}
   cleaned=${cleaned%_}
   printf '%s' "${cleaned}"
+}
+
+pane_log_prefix() {
+  # Build the log filename prefix for a pane (shared by logs and snapshots).
+  local pane_id="$1"
+  local session_name="$2"
+
+  local window_index pane_index pane_title window_name
+  if ! window_index=$(run_tmux display-message -p -t "$pane_id" '#{window_index}' 2>/dev/null); then
+    return 1
+  fi
+  pane_index=$(run_tmux display-message -p -t "$pane_id" '#{pane_index}')
+  pane_title=$(run_tmux display-message -p -t "$pane_id" '#{pane_title}')
+  window_name=$(run_tmux display-message -p -t "$pane_id" '#{window_name}')
+
+  # Label priority: pane title (set via select-pane -T), then window name, then pane index.
+  local label_source="$pane_title"
+  [[ -n "$label_source" ]] || label_source="$window_name"
+  [[ -n "$label_source" ]] || label_source="pane${pane_index}"
+  local safe_label
+  safe_label=$(sanitize_label "$label_source")
+  [[ -n "$safe_label" ]] || safe_label="pane${pane_index}"
+
+  printf '%s-w%s-p%s-%s' "$session_name" "$window_index" "$pane_index" "$safe_label"
+}
+
+snapshot_pane() {
+  # Capture the rendered pane as plain text for easier reading.
+  local pane_id="$1"
+  local session_name="$2"
+
+  local snapshot_dir
+  snapshot_dir=$(run_tmux show-option -qv -t "$session_name" @record_snapshot_dir 2>/dev/null || true)
+  if [[ -z "$snapshot_dir" ]]; then
+    local log_dir
+    log_dir=$(run_tmux show-option -qv -t "$session_name" @record_log_dir 2>/dev/null || true)
+    [[ -n "$log_dir" ]] || return 0
+    snapshot_dir="$log_dir/snapshots"
+  fi
+  mkdir -p "$snapshot_dir"
+
+  local log_prefix
+  if ! log_prefix=$(pane_log_prefix "$pane_id" "$session_name"); then
+    return 0
+  fi
+  local snapshot_file="$snapshot_dir/${log_prefix}.txt"
+
+  local previous_snapshot_file
+  previous_snapshot_file=$(run_tmux show-option -pqv -t "$pane_id" @record_snapshot_file 2>/dev/null || true)
+  if [[ -n "$previous_snapshot_file" && "$previous_snapshot_file" != "$snapshot_file" && -e "$previous_snapshot_file" ]]; then
+    mv -f -- "$previous_snapshot_file" "$snapshot_file"
+  fi
+  run_tmux set-option -pt "$pane_id" -q @record_snapshot_file "$snapshot_file"
+
+  if run_tmux capture-pane -p -J -t "$pane_id" > "${snapshot_file}.tmp" 2>/dev/null; then
+    mv -f -- "${snapshot_file}.tmp" "$snapshot_file"
+  else
+    rm -f -- "${snapshot_file}.tmp" 2>/dev/null || true
+  fi
+}
+
+snapshot_loop() {
+  local session_name="$1"
+  local interval="$2"
+
+  while run_tmux has-session -t "$session_name" 2>/dev/null; do
+    local panes
+    panes=$(run_tmux list-panes -t "$session_name" -F '#{pane_id}' 2>/dev/null || true)
+    if [[ -n "$panes" ]]; then
+      while IFS= read -r pane_id; do
+        snapshot_pane "$pane_id" "$session_name"
+      done <<<"$panes"
+    fi
+    sleep "$interval"
+  done
 }
 
 pipe_pane() {
@@ -73,24 +150,13 @@ pipe_pane() {
 
   mkdir -p "$log_dir"
 
-  local window_index pane_index pane_title window_name
-  if ! window_index=$(run_tmux display-message -p -t "$pane_id" '#{window_index}' 2>/dev/null); then
+  local log_prefix
+  if ! log_prefix=$(pane_log_prefix "$pane_id" "$session_name"); then
     return 0
   fi
-  pane_index=$(run_tmux display-message -p -t "$pane_id" '#{pane_index}')
-  pane_title=$(run_tmux display-message -p -t "$pane_id" '#{pane_title}')
-  window_name=$(run_tmux display-message -p -t "$pane_id" '#{window_name}')
-
-  # Label priority: pane title (set via select-pane -T), then window name, then pane index.
-  local label_source="$pane_title"
-  [[ -n "$label_source" ]] || label_source="$window_name"
-  [[ -n "$label_source" ]] || label_source="pane${pane_index}"
-  local safe_label
-  safe_label=$(sanitize_label "$label_source")
-  [[ -n "$safe_label" ]] || safe_label="pane${pane_index}"
 
   local log_file
-  log_file="$log_dir/${session_name}-w${window_index}-p${pane_index}-${safe_label}.log"
+  log_file="$log_dir/${log_prefix}.log"
   local escaped_log
   escaped_log=$(printf '%q' "$log_file")
   local escaped_awk
@@ -184,8 +250,16 @@ main() {
     exit 0
   fi
 
+  if [[ "${1-}" == "--snapshot-loop" ]]; then
+    shift
+    [[ $# -ge 2 ]] || { echo "--snapshot-loop requires <session_name> <interval_seconds>" >&2; exit 1; }
+    snapshot_loop "$1" "$2"
+    exit 0
+  fi
+
   local session_name="record"
   local output_root="$PWD/tmux-recordings"
+  local snapshot_interval="${RECORD_TMUX_SNAPSHOT_INTERVAL:-20}"
   local attach=1
 
   while [[ $# -gt 0 ]]; do
@@ -198,6 +272,11 @@ main() {
       -o|--output-dir)
         [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; exit 1; }
         output_root="$2"
+        shift 2
+        ;;
+      --snapshot-interval)
+        [[ $# -ge 2 ]] || { echo "Missing value for $1" >&2; exit 1; }
+        snapshot_interval="$2"
         shift 2
         ;;
       --no-attach)
@@ -215,6 +294,14 @@ main() {
         ;;
     esac
   done
+
+  if [[ -z "$snapshot_interval" ]]; then
+    snapshot_interval=0
+  fi
+  if ! [[ "$snapshot_interval" =~ ^[0-9]+$ ]]; then
+    echo "snapshot interval must be an integer number of seconds (0 to disable)" >&2
+    exit 1
+  fi
 
   ensure_tmux
 
@@ -239,6 +326,13 @@ main() {
   run_tmux set-option -t "$session_name" -q @record_log_dir "$log_dir"
   if [[ -n "$DEBUG_LOG" ]]; then
     run_tmux set-option -t "$session_name" -q @record_debug_log "$DEBUG_LOG"
+  fi
+  if (( snapshot_interval > 0 )); then
+    local snapshot_dir="$log_dir/snapshots"
+    mkdir -p "$snapshot_dir"
+    run_tmux set-option -t "$session_name" -q @record_snapshot_dir "$snapshot_dir"
+    run_tmux set-option -t "$session_name" -q @record_snapshot_interval "$snapshot_interval"
+    TMUX_SOCKET="$TMUX_SOCKET" nohup "$SCRIPT_PATH" --snapshot-loop "$session_name" "$snapshot_interval" >/dev/null 2>&1 &
   fi
 
   # Hooks to auto-pipe new panes and refresh on retitles/renames.
