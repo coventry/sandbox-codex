@@ -58,9 +58,6 @@ RUN npm install -g @openai/codex
 ENV PATH="/node/.cargo/bin:${PATH}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Ensure the venv binaries are on PATH for all processes.
-ENV VENV_PATH="/opt/codex-venv"
-ENV PATH="${VENV_PATH}/bin:${PATH}"
 
 
 COPY --chown=node:node docker-assets/tmux.conf /home/node/.tmux.conf
