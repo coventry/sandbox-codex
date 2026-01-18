@@ -142,6 +142,8 @@ ensure_session() {
 
       export PATH="/opt/codex-env/bin:${PATH}"
 
+      tmux new-session -d -s "$SESSION"
+
       tmux rename-window -t "${SESSION}:0" codex
       tmux select-pane -t "${SESSION}:0.0" -T codex
       tmux send-keys -t "${SESSION}:0.0" "cd \"$CODEX_WORKDIR\" && codex --dangerously-bypass-approvals-and-sandbox" C-m
