@@ -56,7 +56,7 @@ COPY --from=tmux-builder /usr/local/share/man/man1/tmux.1 /usr/local/share/man/m
 RUN npm install -g @openai/codex
 
 # Ensure the install of uv goes to the right location.
-USER node 
+USER node
 
 ENV PATH="/node/.cargo/bin:${PATH}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
