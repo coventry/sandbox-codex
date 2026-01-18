@@ -27,6 +27,10 @@ CONTAINER_HOME="${CODEX_CONTAINER_HOME:-/home/node}"
 
 CODEX_AUTH_HOST="${CODEX_AUTH_HOST:-$HOME/.codex/auth.json}"
 CODEX_CONFIG_CONTAINER="${CODEX_CONFIG_CONTAINER:-$CONTAINER_HOME/.codex}"
+CODEX_LOCALE="${CODEX_LOCALE:-C.UTF-8}"
+CODEX_LANG="${CODEX_LANG:-$CODEX_LOCALE}"
+CODEX_LC_ALL="${CODEX_LC_ALL:-$CODEX_LOCALE}"
+CODEX_LC_CTYPE="${CODEX_LC_CTYPE:-$CODEX_LOCALE}"
 
 if [[ "$REL_PATH" == "." ]]; then
   WORKDIR_IN_CONTAINER="$CONTAINER_ROOT"
@@ -82,6 +86,9 @@ start_container() {
     -w "$WORKDIR_IN_CONTAINER" \
     -e CODEX_WORKDIR="$WORKDIR_IN_CONTAINER" \
     -e HOME="$CONTAINER_HOME" \
+    -e LANG="$CODEX_LANG" \
+    -e LC_ALL="$CODEX_LC_ALL" \
+    -e LC_CTYPE="$CODEX_LC_CTYPE" \
     "$IMAGE" \
     bash -lc 'set -euo pipefail
       waited=0
@@ -122,6 +129,10 @@ ensure_session() {
     -e CODEX_WORKDIR_DEFAULT="$WORKDIR_IN_CONTAINER" \
     -e CODEX_TMUX_SESSION="$SESSION_NAME" \
     -e HOME="$CONTAINER_HOME" \
+    -e LANG="$CODEX_LANG" \
+    -e LC_ALL="$CODEX_LC_ALL" \
+    -e LC_CTYPE="$CODEX_LC_CTYPE" \
+    -e EDITOR=emacs \
     --user "$CONTAINER_USER" \
     "$CONTAINER_NAME" \
     bash -lc 'set -euo pipefail
