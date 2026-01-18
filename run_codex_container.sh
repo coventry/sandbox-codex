@@ -154,8 +154,8 @@ ensure_image
 ensure_container
 
 # Copy ~/.codex/auth.json in late, to avoid polluting the repo with secrets
-docker cp --archive "$CODEX_AUTH_HOST" \
-       "$CONTAINER_NAME":"$CODEX_CONFIG_CONTAINER"
+AUTH_DESTINATION="$CONTAINER_NAME":"$CODEX_CONFIG_CONTAINER"
+docker cp --archive "$CODEX_AUTH_HOST" $AUTH_DESTINATION
 
 ensure_session
 docker exec -it "$CONTAINER_NAME" tmux attach -t "$SESSION_NAME"
