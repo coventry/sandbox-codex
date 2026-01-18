@@ -2,6 +2,16 @@
 
 Sandbox codex, start it in tmux and record all tmux activity
 
+## Installation
+
+`./cron-job.sh` needs to be run on the host, at whatever frequency you
+specify. For instance, run `crontab -e`, and put something like this
+at the bottom of the crontab file:
+
+```
+* * * * * /home/ubuntu2/src/sandbox-codex/cron-job.sh
+```
+
 ## Usage
 
 ```bash
