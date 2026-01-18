@@ -41,8 +41,6 @@ fi
 EXTRA_MOUNTS=()
 HARDENED_FLAGS=(
   --cap-drop=ALL
-  --cap-add=CAP_DAC_READ_SEARCH
-  --cap-add=CAP_DAC_OVERRIDE
   --security-opt no-new-privileges:true
   --pids-limit=512
 )
@@ -79,7 +77,7 @@ start_container() {
   docker run -d \
     --name "$CONTAINER_NAME" \
     --rm \
-    --network host \
+    --runtime=runsc \
     --user "$CONTAINER_USER" \
     "${EXTRA_MOUNTS[@]}" \
     "${HARDENED_FLAGS[@]}" \
