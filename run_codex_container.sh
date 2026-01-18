@@ -78,6 +78,7 @@ start_container() {
     --name "$CONTAINER_NAME" \
     --rm \
     --runtime=runsc \
+    --gpus=all \
     --user "$CONTAINER_USER" \
     "${EXTRA_MOUNTS[@]}" \
     "${HARDENED_FLAGS[@]}" \
@@ -126,6 +127,8 @@ ensure_session() {
     -e CODEX_WORKDIR="$WORKDIR_IN_CONTAINER" \
     -e CODEX_WORKDIR_DEFAULT="$WORKDIR_IN_CONTAINER" \
     -e CODEX_TMUX_SESSION="$SESSION_NAME" \
+    -e NVIDIA_VISIBLE_DEVICES=all \
+    -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
     -e HOME="$CONTAINER_HOME" \
     -e LANG="$CODEX_LANG" \
     -e LC_ALL="$CODEX_LC_ALL" \
