@@ -14,6 +14,8 @@ at the bottom of the crontab file:
 
 ## Usage
 
+Run this in the root of whichever repo you want to work on:
+
 ```bash
 ./run_codex_container.sh
 ```
