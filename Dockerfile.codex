@@ -62,17 +62,9 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV VENV_PATH="/opt/codex-venv"
 ENV PATH="${VENV_PATH}/bin:${PATH}"
 
-COPY record-tmux /opt/record-tmux
-RUN chmod +x /opt/record-tmux/record-tmux.sh
-ENV PATH="/opt/record-tmux:${PATH}"
 
 COPY --chown=node:node docker-assets/tmux.conf /home/node/.tmux.conf
 COPY --chown=node:node docker-assets/codex /home/node/.codex
-
-RUN python3 -m venv /opt/codex-venv \
-    && /opt/codex-venv/bin/pip install --upgrade pip \
-    && /opt/codex-venv/bin/pip install repomix \
-    && chown -R node:node /opt/codex-venv
 
 WORKDIR /workspace/repo
 

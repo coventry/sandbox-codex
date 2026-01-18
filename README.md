@@ -22,11 +22,10 @@ Environment variables you may want to set:
 - `CODEX_TMUX_SESSION`: tmux session name (default `codex`)
 - `CODEX_CONTAINER_HOME`: home directory inside container (default `/home/node`)
 - `CODEX_AUTH_HOST`: path to host auth file (default `~/.codex/auth.json`)
-- `CODEX_RECORD_OUTPUT_DIR`: recordings output dir in the container (default `/workspace/repo/tmux-recordings`)
-- `CODEX_RECORD_SNAPSHOT_INTERVAL`: seconds between readable pane snapshots (default unset/off)
 
 ## Rebuild the image
 
 ```bash
 docker build -t codex-local:latest -f Dockerfile.codex .
 ```
+

@@ -34,8 +34,6 @@ else
   WORKDIR_IN_CONTAINER="$CONTAINER_ROOT/$REL_PATH"
 fi
 
-RECORD_TMUX_SCRIPT_IN_CONTAINER="${CODEX_RECORD_TMUX_SCRIPT:-/opt/record-tmux/record-tmux.sh}"
-RECORD_OUTPUT_DIR_IN_CONTAINER="${CODEX_RECORD_OUTPUT_DIR:-$CONTAINER_ROOT/tmux-recordings}"
 EXTRA_MOUNTS=()
 HARDENED_FLAGS=(
   --cap-drop=ALL
@@ -123,29 +121,12 @@ ensure_session() {
     -e CODEX_WORKDIR="$WORKDIR_IN_CONTAINER" \
     -e CODEX_WORKDIR_DEFAULT="$WORKDIR_IN_CONTAINER" \
     -e CODEX_TMUX_SESSION="$SESSION_NAME" \
-    -e CODEX_RECORD_OUTPUT_DIR="$RECORD_OUTPUT_DIR_IN_CONTAINER" \
-    -e CODEX_RECORD_TMUX_SCRIPT="$RECORD_TMUX_SCRIPT_IN_CONTAINER" \
-    -e CODEX_RECORD_SNAPSHOT_INTERVAL \
     -e HOME="$CONTAINER_HOME" \
     --user "$CONTAINER_USER" \
     "$CONTAINER_NAME" \
     bash -lc 'set -euo pipefail
       CODEX_WORKDIR="${CODEX_WORKDIR:-${CODEX_WORKDIR_DEFAULT:-/workspace/repo}}"
       SESSION="${CODEX_TMUX_SESSION:-codex}"
-      RECORD_SCRIPT="${CODEX_RECORD_TMUX_SCRIPT:-/opt/record-tmux/record-tmux.sh}"
-      OUTPUT_DIR="${CODEX_RECORD_OUTPUT_DIR:-/workspace/repo/tmux-recordings}"
-      if [[ -n "${CODEX_RECORD_SNAPSHOT_INTERVAL:-}" ]]; then
-        export RECORD_TMUX_SNAPSHOT_INTERVAL="$CODEX_RECORD_SNAPSHOT_INTERVAL"
-      fi
-
-      if [[ ! -x "$RECORD_SCRIPT" ]]; then
-        echo "record-tmux script not found at $RECORD_SCRIPT" >&2
-        exit 1
-      fi
-
-      mkdir -p "$OUTPUT_DIR"
-
-      bash "$RECORD_SCRIPT" -s "$SESSION" -o "$OUTPUT_DIR" --no-attach
 
       export PATH="/opt/codex-env/bin:${PATH}"
 
