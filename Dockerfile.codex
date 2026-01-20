@@ -69,6 +69,11 @@ COPY docker-assets/tmux-snapshot-panes.sh /usr/local/bin/
 COPY --chown=node:node docker-assets/tmux.conf /home/node/.tmux.conf
 COPY --chown=node:node docker-assets/codex /home/node/.codex
 
+# Copy in .profile, so that codex will have the correct .venv path
+# when executing shell commands.
+# https://github.com/openai/codex/issues/6243#issuecomment-3664477985
+COPY --chown=node:node docker-assets/profile /home/node/.profile
+
 WORKDIR /workspace/repo
 
 CMD ["tail", "-f", "/dev/null"]
