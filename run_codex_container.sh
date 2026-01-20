@@ -140,8 +140,6 @@ ensure_session() {
       CODEX_WORKDIR="${CODEX_WORKDIR:-${CODEX_WORKDIR_DEFAULT:-/workspace/repo}}"
       SESSION="${CODEX_TMUX_SESSION:-codex}"
 
-      export PATH="/opt/codex-env/bin:${PATH}"
-
       tmux new-session -d -s "$SESSION"
 
       tmux rename-window -t "${SESSION}:0" codex
