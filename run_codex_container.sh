@@ -139,12 +139,14 @@ ensure_session() {
     bash -lc 'set -euo pipefail
       CODEX_WORKDIR="${CODEX_WORKDIR:-${CODEX_WORKDIR_DEFAULT:-/workspace/repo}}"
       SESSION="${CODEX_TMUX_SESSION:-codex}"
+      SET_UP_CODEX="cd \"$CODEX_WORKDIR\""
+      RUN_CODEX="codex --dangerously-bypass-approvals-and-sandbox"
 
       tmux new-session -d -s "$SESSION"
 
       tmux rename-window -t "${SESSION}:0" codex
       tmux select-pane -t "${SESSION}:0.0" -T codex
-      tmux send-keys -t "${SESSION}:0.0" "cd \"$CODEX_WORKDIR\" && codex --dangerously-bypass-approvals-and-sandbox" C-m
+      tmux send-keys -t "${SESSION}:0.0" "$SET_UP_CODEX && $RUN_CODEX" C-m
     '
 }
 
