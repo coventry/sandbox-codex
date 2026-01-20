@@ -1,4 +1,4 @@
-FROM node:20-bookworm AS tmux-builder
+FROM node:25-trixie AS tmux-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -25,7 +25,7 @@ RUN curl -fsSL "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/t
     && cd / \
     && rm -rf /tmp/tmux.tar.gz /tmp/tmux-${TMUX_VERSION}
 
-FROM node:20-bookworm
+FROM node:25-trixie
 
 ENV DEBIAN_FRONTEND=noninteractive
 
