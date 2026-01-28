@@ -1,4 +1,5 @@
-FROM node:25-trixie AS tmux-builder
+###################################################################################
+FROM nvcr.io/nvidia/pytorch:25.12-py3 AS tmux-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -25,7 +26,8 @@ RUN curl -fsSL "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/t
     && cd / \
     && rm -rf /tmp/tmux.tar.gz /tmp/tmux-${TMUX_VERSION}
 
-FROM node:25-trixie
+################################################################################
+FROM nvcr.io/nvidia/pytorch:25.12-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -37,6 +39,8 @@ RUN apt-get update \
         emacs-nox \
         jq \
         less \
+	nodejs \
+	npm \
 	procps \
         python3 \
         python3-pip \
@@ -47,32 +51,33 @@ RUN apt-get update \
         libtinfo6 \
         ripgrep \
         rsync \
-        zip \
         unzip \
+        zip \
+        zstd \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=tmux-builder /usr/local/bin/tmux /usr/local/bin/tmux
 COPY --from=tmux-builder /usr/local/share/man/man1/tmux.1 /usr/local/share/man/man1/tmux.1
 
 RUN npm install -g @openai/codex
+COPY --from=tmux-builder /usr/lib/aarch64-linux-gnu/libevent_core-2.1.so.7 /usr/lib/aarch64-linux-gnu/
 
 # Ensure the install of uv goes to the right location.
-USER node
-
-ENV PATH="/node/.cargo/bin:${PATH}"
+USER ubuntu
+ENV PATH="/home/ubuntu/.cargo/bin:${PATH}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 USER root
 
 COPY docker-assets/tmux-snapshot-panes.sh /usr/local/bin/
 
-COPY --chown=node:node docker-assets/tmux.conf /home/node/.tmux.conf
-COPY --chown=node:node docker-assets/codex /home/node/.codex
+COPY --chown=ubuntu:ubuntu docker-assets/tmux.conf /home/ubuntu/.tmux.conf
+COPY --chown=ubuntu:ubuntu docker-assets/codex /home/ubuntu/.codex
 
 # Copy in .profile, so that codex will have the correct .venv path
 # when executing shell commands.
 # https://github.com/openai/codex/issues/6243#issuecomment-3664477985
-COPY --chown=node:node docker-assets/profile /home/node/.profile
+COPY --chown=ubuntu:ubuntu docker-assets/profile /home/ubuntu/.profile
 
 WORKDIR /workspace/repo
 
