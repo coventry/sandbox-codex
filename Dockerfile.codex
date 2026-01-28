@@ -58,8 +58,6 @@ RUN apt-get update \
 
 COPY --from=tmux-builder /usr/local/bin/tmux /usr/local/bin/tmux
 COPY --from=tmux-builder /usr/local/share/man/man1/tmux.1 /usr/local/share/man/man1/tmux.1
-
-RUN npm install -g @openai/codex
 COPY --from=tmux-builder /usr/lib/aarch64-linux-gnu/libevent_core-2.1.so.7 /usr/lib/aarch64-linux-gnu/
 
 # Ensure the install of uv goes to the right location.
@@ -78,6 +76,9 @@ COPY --chown=ubuntu:ubuntu docker-assets/codex /home/ubuntu/.codex
 # when executing shell commands.
 # https://github.com/openai/codex/issues/6243#issuecomment-3664477985
 COPY --chown=ubuntu:ubuntu docker-assets/profile /home/ubuntu/.profile
+
+# Put this last, as it is the most likely to need re-running.
+RUN npm install -g @openai/codex 
 
 WORKDIR /workspace/repo
 
