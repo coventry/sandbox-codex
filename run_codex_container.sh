@@ -2,18 +2,30 @@
 
 set -euo pipefail
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "docker is required to run this script." >&2
-  exit 1
-fi
+EXTRA_PORTS=()
+while [[ $# -gt 0 ]] ; do # Parse CL args; c.f. configurable env vars below
+    case $1 in
+	# Expose the port which codex uses for auth callbacks. This
+	# does not actually work because `codex login` only binds to
+	# localhost in the container; use `codex login --device-auth`
+	# instead. But perhaps CL args like this should be the way to
+	# adjust the script going forward.
+	-p|--expose-auth-port)
+	    EXTRA_PORTS+=("-p" "1455:1455")
+	    shift # Remove this from CL args
+	    ;;
+    esac
+done
+
+################################################################################
+# Configurable environment variables
+CONTAINER_ROOT="/workspace/repo"
+IMAGE="${CODEX_IMAGE:-codex-local:latest}"
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   echo "This script must be run from inside a git repo." >&2
   exit 1
 }
-
-CONTAINER_ROOT="/workspace/repo"
-IMAGE="${CODEX_IMAGE:-codex-local:latest}"
 DOCKERFILE="${CODEX_DOCKERFILE:-$ROOT/Dockerfile.codex}"
 REPO_NAME="$(basename "$ROOT")"
 CONTAINER_NAME="${CODEX_CONTAINER_NAME:-codex-tmux-$REPO_NAME}"
@@ -31,6 +43,12 @@ CODEX_LOCALE="${CODEX_LOCALE:-C.UTF-8}"
 CODEX_LANG="${CODEX_LANG:-$CODEX_LOCALE}"
 CODEX_LC_ALL="${CODEX_LC_ALL:-$CODEX_LOCALE}"
 CODEX_LC_CTYPE="${CODEX_LC_CTYPE:-$CODEX_LOCALE}"
+################################################################################
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "docker is required to run this script." >&2
+  exit 1
+fi
 
 if [[ "$REL_PATH" == "." ]]; then
   WORKDIR_IN_CONTAINER="$CONTAINER_ROOT"
@@ -82,6 +100,7 @@ start_container() {
     --user "$CONTAINER_USER" \
     "${EXTRA_MOUNTS[@]}" \
     "${HARDENED_FLAGS[@]}" \
+    "${EXTRA_PORTS[@]}" \
     -w "$WORKDIR_IN_CONTAINER" \
     -e CODEX_WORKDIR="$WORKDIR_IN_CONTAINER" \
     -e HOME="$CONTAINER_HOME" \
