@@ -99,6 +99,10 @@ COPY --chown=ubuntu:ubuntu docker-assets/codex /home/ubuntu/.codex
 # https://github.com/openai/codex/issues/6243#issuecomment-3664477985
 COPY --chown=ubuntu:ubuntu docker-assets/profile /home/ubuntu/.profile
 
+# Track codex token usage
+# https://ccusage.com/guide/codex/
+RUN npm install -g @ccusage/codex@latest
+
 # Put this last, as it is the most likely to need re-running.
 RUN npm install -g @openai/codex 
 
