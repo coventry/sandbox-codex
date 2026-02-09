@@ -102,7 +102,6 @@ start_container() {
   add_mount "$ROOT" "$CONTAINER_ROOT"
   docker run -d \
     --name "$CONTAINER_NAME" \
-    --rm \
     --runtime=runsc \
     --gpus=all \
     --user "$CONTAINER_USER" \
