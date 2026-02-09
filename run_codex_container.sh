@@ -68,7 +68,7 @@ EXTRA_MOUNTS=()
 HARDENED_FLAGS=(
   --cap-drop=ALL
   --security-opt no-new-privileges:true
-  --pids-limit=512
+  --pids-limit=4096
 )
 
 add_mount() {
