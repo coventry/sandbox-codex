@@ -104,6 +104,7 @@ start_container() {
     --name "$CONTAINER_NAME" \
     --runtime=runsc \
     --gpus=all \
+    --shm-size 64g \
     --user "$CONTAINER_USER" \
     "${EXTRA_MOUNTS[@]}" \
     "${HARDENED_FLAGS[@]}" \
