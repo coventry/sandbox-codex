@@ -14,8 +14,15 @@ while [[ $# -gt 0 ]] ; do # Parse CL args; c.f. configurable env vars below
 	    EXTRA_PORTS+=("-p" "1455:1455")
 	    shift # Remove this from CL args
 	    ;;
+	-ep|--expose-port)
+	    EXTRA_PORTS+=("-p" "$2:$2")
+	    shift; shift # Remove these two args from CL args
+	    ;;
     esac
 done
+
+# EXTRA_PORTS+=("-p" "8000:8000") # Expose 8000 by default
+
 
 ################################################################################
 # Configurable environment variables
