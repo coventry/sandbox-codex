@@ -35,7 +35,8 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
 }
 DOCKERFILE="${CODEX_DOCKERFILE:-$ROOT/Dockerfile.codex}"
 REPO_NAME="$(basename "$ROOT")"
-CONTAINER_NAME="${CODEX_CONTAINER_NAME:-codex-tmux-$REPO_NAME}"
+# ",," lower-cases the name
+CONTAINER_NAME="${CODEX_CONTAINER_NAME:-codex-tmux-${REPO_NAME,,}}" 
 SESSION_NAME="${CODEX_TMUX_SESSION:-codex}"
 REL_PATH="$(realpath --relative-to="$ROOT" "$PWD")"
 
