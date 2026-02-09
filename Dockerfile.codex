@@ -81,6 +81,12 @@ USER ubuntu
 ENV PATH="/home/ubuntu/.cargo/bin:${PATH}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh \
+    | bash \
+    && . /home/ubuntu/.nvm/nvm.sh \
+    && nvm install --lts \
+    && nvm use --lts && type node
+
 USER root
 
 COPY docker-assets/tmux-snapshot-panes.sh /usr/local/bin/
