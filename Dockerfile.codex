@@ -103,6 +103,9 @@ COPY --chown=ubuntu:ubuntu docker-assets/profile /home/ubuntu/.profile
 # https://ccusage.com/guide/codex/
 RUN npm install -g @ccusage/codex@latest
 
+# These seemingly are always missing.
+RUN pip install accelerate datasets matplotlib reportlab
+
 # Put this last, as it is the most likely to need re-running.
 RUN npm install -g @openai/codex 
 
